@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday Code</title>
+    <style>
+        /* Thiết lập nền đen và căn chỉnh canvas */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden; /* Ẩn thanh cuộn */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Style cho chữ chúc mừng */
+        #text-container {
+            position: absolute;
+            z-index: 2;
+            color: #ea80b0;
+            font-family: 'Courier New', Courier, monospace; /* Font kiểu code */
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 10px #ea80b0, 0 0 20px #ea80b0;
+            pointer-events: none; /* Để chuột không bị vướng vào chữ */
+        }
+
+        /* Hiệu ứng nhấp nháy con trỏ */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            background-color: #ea80b0;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="heart"></canvas>
+
+    <div id="text-container">
+        <span id="typed-text"></span><span class="cursor">_</span>
+    </div>
+
+    <script>
+        /* --- PHẦN HIỆU ỨNG TRÁI TIM --- */
+        var canvas = document.getElementById("heart");
+        var context = canvas.getContext("2d");
+        var width = canvas.width = window.innerWidth;
+        var height = canvas.height = window.innerHeight;
+        
+        // Xử lý khi thay đổi kích thước màn hình
+        window.onresize = function() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        var particles = [];
+        var duration = 0; 
+
+        // Hàm tạo các hạt
+        function createParticle(t) {
+            // Công thức toán học hình trái tim
+            // x = 16 * sin(t)^3
+            // y = 13 * cos(t) - 5 * cos(2*t) - 2 * cos(3*t) - cos(4*t)
+            
+            // Random điểm trên trái tim
+            var h = Math.random() * Math.PI * 2; 
+            
+            // Hệ số scale để trái tim to hay nhỏ
+            var scale = 15; 
+            
+            // Tính toán tọa độ cơ bản
+            var xp = 16 * Math.pow(Math.sin(h), 3);
+            var yp = 13 * Math.cos(h) - 5 * Math.cos(2 * h) - 2 * Math.cos(3 * h) - Math.cos(4 * h);
+            
+            // Thêm ngẫu nhiên để tạo độ dày cho nét vẽ
+            var randScale = Math.random() * 2; 
+            xp *= (scale + randScale);
+            yp *= (scale + randScale);
+
+            // Đảo ngược trục Y vì canvas tính y=0 ở trên cùng
+            yp = -yp;
+
+            return {
+                x: xp,
+                y: yp,
+                size: Math.random() * 1.5 + 0.5, // Kích thước hạt
+                color: '#ea80b0', // Màu hồng giống phim
+                speed: Math.random() * 0.5 + 0.2,
+                targetX: xp,
+                targetY: yp,
+                originalX: xp,
+                originalY: yp
+            };
+        }
+
+        // Khởi tạo số lượng hạt
+        for (var i = 0; i < 1500; i++) {
+            particles.push(createParticle());
+        }
+
+        function render() {
+            context.clearRect(0, 0, width, height);
+            
+            // Hiệu ứng nhịp đập (Pulse)
+            // Sử dụng hàm sin theo thời gian để tạo nhịp tim
+            var beat = 1 + Math.sin(duration * 2) * 0.05; 
+            var beat2 = 1 + Math.sin(duration * 4) * 0.03; // Nhịp phụ nhanh hơn
+
+            // Dịch chuyển gốc tọa độ về giữa màn hình
+            context.save();
+            context.translate(width / 2, height / 2);
+
+            particles.forEach(function(p) {
+                // Cập nhật vị trí dựa trên nhịp đập
+                // Kết hợp 2 nhịp để tạo hiệu ứng "thump-thump" tự nhiên
+                var currentScale = beat * beat2;
+                
+                var targetX = p.originalX * currentScale;
+                var targetY = p.originalY * currentScale;
+
+                // Hiệu ứng di chuyển hạt (lerp) để mượt mà
+                p.x += (targetX - p.x) * 0.1;
+                p.y += (targetY - p.y) * 0.1;
+
+                context.fillStyle = p.color;
+                context.beginPath();
+                context.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                context.fill();
+            });
+
+            context.restore();
+            duration += 0.03;
+            requestAnimationFrame(render);
+        }
+
+        /* --- PHẦN HIỆU ỨNG GÕ CHỮ (TYPING EFFECT) --- */
+        const textElement = document.getElementById("typed-text");
+        const message = "Happy Birthday! Chúc bạn tuổi mới rực rỡ ✨"; // Thay đổi lời chúc ở đây
+        let charIndex = 0;
+
+        function typeWriter() {
+            if (charIndex < message.length) {
+                textElement.innerHTML += message.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeWriter, 100); // Tốc độ gõ phím (ms)
+            }
+        }
+
+        // Bắt đầu chạy
+        render();
+        // Đợi 1 giây rồi mới bắt đầu gõ chữ
+        setTimeout(typeWriter, 1000); 
+
+    </script>
+</body>
+</html>
